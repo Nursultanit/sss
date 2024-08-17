@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -12,7 +13,6 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = UserProfile.objects.create_user(**validated_data)
         return user
-
 
 
 class LoginSerializer(serializers.Serializer):
@@ -67,11 +67,13 @@ class ProductSerializer(serializers.ModelSerializer):
     ratings = RatingSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
     date = serializers.DateField(format="%d-%m-%Y")
+    owner = UserProfileSimpleSerializer()
+
 
     class Meta:
         model = Product
         fields = ['product_name', 'category', 'description', 'price', 'product_video',
-                  'active', 'date', 'average_rating', 'ratings', 'reviews']
+                  'active', 'date', 'average_rating', 'ratings', 'reviews', 'owner']
 
     def get_average_rating(self, obj):
         # Method to calculate average rating

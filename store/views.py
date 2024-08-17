@@ -1,21 +1,14 @@
-from rest_framework import viewsets, generics, status, permissions
+from rest_framework import generics, status, viewsets, permissions, filters
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.urls import *
-from .serializers import (
-    UserSerializer, LoginSerializer, UserProfileSerializer,
-    CategorySerializer, ProductSerializer, ProductPhotosSerializer,
-    RatingSerializer, ReviewSerializer
-)
-from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, filters
-from .models import Product
-from .serializers import ProductSerializer
 
+from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review
+from .serializers import UserSerializer, LoginSerializer, UserProfileSerializer, CategorySerializer, ProductSerializer, ProductPhotosSerializer, RatingSerializer, ReviewSerializer
+from .permissions import CheckOwner
 
 
 class RegisterView(generics.CreateAPIView):
@@ -53,6 +46,8 @@ class CustomLoginView(TokenObtainPairView):
 
 
 class LogoutView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
         try:
             refresh_token = request.data.get("refresh")
@@ -68,7 +63,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     filter_backends = [DjangoFilterBackend]
 
-
     def get_queryset(self):
         return super().get_queryset()
 
@@ -83,11 +77,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['category', 'price']
+    permission_classes = [CheckOwner]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 
 class ProductPhotosViewSet(viewsets.ModelViewSet):
     queryset = ProductPhotos.objects.all()
     serializer_class = ProductPhotosSerializer
     permission_classes = [permissions.IsAuthenticated]
+
 
 class RatingViewSet(viewsets.ModelViewSet):
     queryset = Rating.objects.all()
