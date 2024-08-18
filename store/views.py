@@ -5,10 +5,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
-
-from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review
-from .serializers import UserSerializer, LoginSerializer, UserProfileSerializer, CategorySerializer, ProductSerializer, ProductPhotosSerializer, RatingSerializer, ReviewSerializer
-from .permissions import CheckOwner
+from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review, Cart, CarItem
+from .serializers import UserSerializer, LoginSerializer, UserProfileSerializer, CategorySerializer, ProductSerializer, \
+    ProductPhotosSerializer, RatingSerializer, ReviewSerializer, CartSerializer, CartItemSerializer
+from .persmissions import CheckOwner
 
 
 class RegisterView(generics.CreateAPIView):
@@ -83,6 +83,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
 
+
 class ProductPhotosViewSet(viewsets.ModelViewSet):
     queryset = ProductPhotos.objects.all()
     serializer_class = ProductPhotosSerializer
@@ -97,3 +98,28 @@ class RatingViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+
+class CartViewSet(viewsets.ModelViewSet):
+    serializer_class = CartSerializer
+
+    def get_queryset(self):
+        return Cart.objects.filter(user=self.request.user)
+
+
+    def retrieve(self, request, *args, **kwargs):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+
+
+class CarItemViewSet(viewsets.ModelViewSet):
+    serializer_class = CartItemSerializer
+
+    def get_queryset(self):
+        return CarItem.objects.filter(cart__user=self.request.user)
+
+
+    def perform_create(self, serializer):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        serializer.save(cart=cart)

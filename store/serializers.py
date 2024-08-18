@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review
+from .models import UserProfile, Category, Product, ProductPhotos, Rating, Review, CarItem, Cart
+
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -76,10 +78,28 @@ class ProductSerializer(serializers.ModelSerializer):
                   'active', 'date', 'average_rating', 'ratings', 'reviews', 'owner']
 
     def get_average_rating(self, obj):
-        # Method to calculate average rating
         return obj.get_average_rating()
 
 class StoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, source='product')
+
+    class Meta:
+        model = CarItem
+        fields = ['id', 'product', 'product_id', 'quantity', 'get_total_price']
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'items', 'total_price']
+
+    def get_total_price(self, obj):
+        return obj.get_total_price()
